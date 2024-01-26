@@ -15,12 +15,6 @@ struct PatchbayInModule : Patchbay {
 	enum InputIds {
 		INPUT_1,
 		INPUT_2,
-		INPUT_3,
-		INPUT_4,
-		INPUT_5,
-		INPUT_6,
-		INPUT_7,
-		INPUT_8,
 		NUM_INPUTS
 	};
 	enum OutputIds {
@@ -39,14 +33,25 @@ struct PatchbayInModule : Patchbay {
 		return l;
 	}
 
+	int getInputIdx(std::string lbl) {
+		for (int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+			if (lbl.compare(label[i]) == 0) {
+				return i;
+			}
+		}
+
+		return 0;
+	}
+
 	// Change the label of this input, if the label doesn't exist already.
 	// Return whether the label was updated.
-	bool updateLabel(std::string lbl) {
+	bool updateLabel(std::string lbl, int idx = 0) {
 		if(lbl.empty() || sourceExists(lbl)) {
 			return false;
 		}
-		sources.erase(label); //TODO: mutex for this and erase() calls below?
-		label = lbl;
+		std::string oldLabel = label[idx];
+		sources.erase(oldLabel); //TODO: mutex for this and erase() calls below?
+		label[idx] = lbl;
 		addSource(this);
 		return true;
 	}
@@ -55,49 +60,71 @@ struct PatchbayInModule : Patchbay {
 		assert(NUM_INPUTS == NUM_PATCHBAY_INPUTS);
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			configInput(i, string::f("Port %d", i + 1));
+			label[i] = getLabel();
 		}
-		label = getLabel();
 		addSource(this);
 	}
 
 	~PatchbayInModule() {
-		sources.erase(label);
+		sources.erase(label[0]);
 	}
 
 	// process() is not needed for a Patchbay source, values are read directly from inputs by Patchbay out
 
 	json_t* dataToJson() override {
 		json_t *data = json_object();
-		json_object_set_new(data, "label", json_string(label.c_str()));
+
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// Create a character array to hold the concatenated string
+			char buffer[6]; // Adjust the size as needed
+
+			// Use snprintf to format the combination
+			snprintf(buffer, sizeof(buffer), "label%d", i);
+
+			// The buffer now contains the concatenated C-style string
+			const char* key = buffer;
+
+			json_object_set_new(data, key, json_string(label[i].c_str()));
+		}
+
 		return data;
 	}
 
 	void dataFromJson(json_t* root) override {
-		json_t *label_json = json_object_get(root, "label");
-		if(json_is_string(label_json)) {
-			// remove previous label randomly generated in constructor
-			sources.erase(label);
-			label = std::string(json_string_value(label_json));
-			if(sourceExists(label)) {
-				// Label already exists in sources, this means that dataFromJson()
-				// was called due to duplication instead of loading from file.
-				// Generate new label.
-				label = getLabel();
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// Create a character array to hold the concatenated string
+			char buffer[6]; // Adjust the size as needed
+
+			// Use snprintf to format the combination
+			snprintf(buffer, sizeof(buffer), "label%d", i);
+
+			// The buffer now contains the concatenated C-style string
+			const char* key = buffer;
+			json_t *label_json = json_object_get(root, key);
+			if(json_is_string(label_json)) {
+				// remove previous label randomly generated in constructor
+				sources.erase(label[i]);
+				label[0] = std::string(json_string_value(label_json));
+				if(sourceExists(label[i])) {
+					// Label already exists in sources, this means that dataFromJson()
+					// was called due to duplication instead of loading from file.
+					// Generate new label.
+					label[i] = getLabel();
+				}
+			} else {
+				// label couldn't be read from json for some reason, generate new one
+				label[i] = getLabel();
 			}
-		} else {
-			// label couldn't be read from json for some reason, generate new one
-			label = getLabel();
 		}
 
 		addSource(this);
-
 	}
 
 };
 
 struct PatchbayOutModule : Patchbay {
 
-	bool sourceIsValid;
+	bool sourceIsValid[NUM_PATCHBAY_INPUTS];
 
 	enum ParamIds {
 		NUM_PARAMS
@@ -108,12 +135,6 @@ struct PatchbayOutModule : Patchbay {
 	enum OutputIds {
 		OUTPUT_1,
 		OUTPUT_2,
-		OUTPUT_3,
-		OUTPUT_4,
-		OUTPUT_5,
-		OUTPUT_6,
-		OUTPUT_7,
-		OUTPUT_8,
 		NUM_OUTPUTS
 	};
 	enum LightIds {
@@ -121,19 +142,6 @@ struct PatchbayOutModule : Patchbay {
 		OUTPUT_1_LIGHTR,
 		OUTPUT_2_LIGHTG,
 		OUTPUT_2_LIGHTR,
-		OUTPUT_3_LIGHTG,
-		OUTPUT_3_LIGHTR,
-		OUTPUT_4_LIGHTG,
-		OUTPUT_4_LIGHTR,
-		OUTPUT_5_LIGHTG,
-		OUTPUT_5_LIGHTR,
-		OUTPUT_6_LIGHTG,
-		OUTPUT_6_LIGHTR,
-		OUTPUT_7_LIGHTG,
-		OUTPUT_7_LIGHTR,
-		OUTPUT_8_LIGHTG,
-		OUTPUT_8_LIGHTR,
-
 		NUM_LIGHTS
 	};
 
@@ -142,65 +150,83 @@ struct PatchbayOutModule : Patchbay {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			configOutput(i, string::f("Port %d", i + 1));
 		}
-		if(sources.size() > 0) {
-			if(sourceExists(lastInsertedKey)) {
-				label = lastInsertedKey;
-			} else {
-				// the lastly added input doesn't exist anymore,
-				// pick first input in alphabetical order
-				label = sources.begin()->first;
-			}
-			sourceIsValid = true;
-		} else {
-			label = "";
-			sourceIsValid = false;
+
+		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+			label[i] = "";
+			sourceIsValid[i] = false;
 		}
 	}
 
 	void process(const ProcessArgs &args) override {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			std::string key = label[i];
 
-		if(sourceExists(label)){
-			PatchbayInModule *src = sources[label];
-			for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
-				Input input = src->inputs[PatchbayInModule::INPUT_1 + i];
+			if(sourceExists(key)){
+				PatchbayInModule *src = sources[label[i]];
+				int idx = src->getInputIdx(label[i]);
+				Input input = src->inputs[idx];
+				
 				const int channels = input.getChannels();
 				outputs[OUTPUT_1 + i].setChannels(channels);
 				for(int c = 0; c < channels; c++) {
 					outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
 				}
 				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
-				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());
-			}
-			sourceIsValid = true;
-		} else {
-			for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
+				sourceIsValid[i] = true;
+			} else {
 				outputs[i].setChannels(1);
 				outputs[OUTPUT_1 + i].setVoltage(0.f);
 				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness(0.f);
 				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(0.f);
-			}
-			sourceIsValid = false;
+				sourceIsValid[i] = false;
+			}			
 		}
 	};
 
 	json_t* dataToJson() override {
 		json_t *data = json_object();
-		json_object_set_new(data, "label", json_string(label.c_str()));
+
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// Create a character array to hold the concatenated string
+			char buffer[6]; // Adjust the size as needed
+
+			// Use snprintf to format the combination
+			snprintf(buffer, sizeof(buffer), "label%d", i);
+
+			// The buffer now contains the concatenated C-style string
+			const char* key = buffer;
+			json_object_set_new(data, key, json_string(label[i].c_str()));
+		}
+
 		return data;
 	}
 
 	void dataFromJson(json_t* root) override {
-		json_t *label_json = json_object_get(root, "label");
-		if(json_is_string(label_json)) {
-			label = json_string_value(label_json);
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// Create a character array to hold the concatenated string
+			char buffer[6]; // Adjust the size as needed
+
+			// Use snprintf to format the combination
+			snprintf(buffer, sizeof(buffer), "label%d", i);
+
+			// The buffer now contains the concatenated C-style string
+			const char* key = buffer;
+
+			json_t *label_json = json_object_get(root, key);
+			if(json_is_string(label_json)) {
+				label[i] = json_string_value(label_json);
+			}
 		}
+
 	}
 };
 
 void Patchbay::addSource(PatchbayInModule *t) {
-	std::string key = t->label;
-	sources[key] = t; //TODO: mutex?
-	lastInsertedKey = key;
+	for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+		std::string key = t->label[i];
+		sources[key] = t; //TODO: mutex?
+	}
 }
 
 
@@ -214,17 +240,19 @@ struct PatchbayLabelDisplay {
 
 struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 	PatchbayInModule *module;
+	int idx;
 	std::string errorText = "!err";
 	GUITimer errorDisplayTimer;
 	float errorDuration = 3.f;
 
-	EditablePatchbayLabelTextbox(PatchbayInModule *m): EditableTextBox() {
+	EditablePatchbayLabelTextbox(PatchbayInModule *m, int idx=0): EditableTextBox() {
 		assert(errorText.size() <= maxTextLength);
+		this->idx = idx;
 		module = m;
 	}
 
 	void onDeselect(const event::Deselect &e) override {
-		if(module->updateLabel(TextField::text) || module->label.compare(TextField::text) == 0) {
+		if(module->updateLabel(TextField::text, idx) || module->label[idx].compare(TextField::text) == 0) {
 			errorDisplayTimer.reset();
 		} else {
 			errorDisplayTimer.trigger(errorDuration);
@@ -242,9 +270,9 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 			HoverableTextBox::setText(errorText);
 		} else {
 			textColor = defaultTextColor;
-			HoverableTextBox::setText(module->label);
+			HoverableTextBox::setText(module->label[idx]);
 			if(!isFocused) {
-				TextField::setText(module->label);
+				TextField::setText(module->label[idx]);
 			}
 		}
 	}
@@ -254,13 +282,15 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 struct PatchbayLabelMenuItem : MenuItem {
 	PatchbayOutModule *module;
 	std::string label;
+	int idx;
 	void onAction(const event::Action &e) override {
-		module->label = label;
+		module->label[idx] = label;
 	}
 };
 
 struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 	PatchbayOutModule *module;
+	int idx;
 
 	PatchbaySourceSelectorTextBox() : HoverableTextBox() {}
 
@@ -272,30 +302,40 @@ struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 		{
 			PatchbayLabelMenuItem *item = new PatchbayLabelMenuItem();
 			item->module = module;
-			item->label = "";
+			item->idx = idx;
+			item->label = "";		
 			item->text = "(none)";
-			item->rightText = CHECKMARK(module->label.empty());
+			item->rightText = CHECKMARK(module->label[idx].empty());
 			menu->addChild(item);
 		}
 
-		if(!module->sourceIsValid && !module->label.empty()) {
-			// the source of the module doesn't exist, it shouldn't appear in sources, so display it as unavailable
-			PatchbayLabelMenuItem *item = new PatchbayLabelMenuItem();
-			item->module = module;
-			item->label = module->label;
-			item->text = module->label;
-			item->text += " (missing)";
-			item->rightText = CHECKMARK("true");
-			menu->addChild(item);
+		for (int i=0; i < NUM_PATCHBAY_INPUTS; i++) {
+			if(!module->sourceIsValid[i] && !module->label[i].empty()) {
+				// the source of the module doesn't exist, it shouldn't appear in sources, so display it as unavailable
+				PatchbayLabelMenuItem *item = new PatchbayLabelMenuItem();
+				item->module = module;
+				item->idx = idx;
+				item->label = module->label[i];
+				item->text = module->label[i];
+				item->text += " (missing)";
+				item->rightText = CHECKMARK("true");
+				menu->addChild(item);
+			}
+
 		}
 
 		auto src = module->sources;
+
 		for(auto it = src.begin(); it != src.end(); it++) {
+			int idx = it->second->getInputIdx(it->first);
+
 			PatchbayLabelMenuItem *item = new PatchbayLabelMenuItem();
+			
 			item->module = module;
+			item->idx = idx;
 			item->label = it->first;
 			item->text = it->first;
-			item->rightText = CHECKMARK(item->label == module->label);
+			item->rightText = CHECKMARK(item->label == module->label[idx]);
 			menu->addChild(item);
 		}
 	}
@@ -314,8 +354,8 @@ struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 	void step() override {
 		HoverableTextBox::step();
 		if(!module) return;
-		setText(module->label);
-		textColor = module->sourceIsValid ? defaultTextColor : errorTextColor;
+		setText(module->label[0]);
+		textColor = module->sourceIsValid[idx] ? defaultTextColor : errorTextColor;
 	}
 
 };
@@ -395,106 +435,108 @@ struct PatchbayOutPortWidget : PJ301MPort {
 void PatchbayOutPortTooltip::step() {
 	// Based on PortTooltip::step(), but reworked to display also the label of
 	// the incoming signal at the other end of the Patchbay if applicable.
-	if (portWidget->module) {
 
-		// The final tooltip text is going to have these four parts.
-		std::string labelText = "";
-		std::string description = ""; // Note: PatchbayOutPortWidget doesn't actually have a description, but this is here for completeness anyway.
-		std::string voltageText = "";
-		std::string cableText = "";
+	// if (portWidget->module) {
 
-		// find out the corresponding Patchbay input
-		PatchbayOutModule* mod = dynamic_cast<PatchbayOutModule*>(portWidget->module);
-		PatchbayInModule* inputPatchbay = NULL;
-		if(mod && mod->sourceExists(mod->label)) {
-			inputPatchbay = mod->sources[mod->label];
-		}
+	// 	// The final tooltip text is going to have these four parts.
+	// 	std::string labelText = "";
+	// 	std::string description = ""; // Note: PatchbayOutPortWidget doesn't actually have a description, but this is here for completeness anyway.
+	// 	std::string voltageText = "";
+	// 	std::string cableText = "";
 
-		engine::Port* port = portWidget->getPort();
-		engine::PortInfo* portInfo = portWidget->getPortInfo();
+	// 	// find out the corresponding Patchbay input
+	// 	PatchbayOutModule* mod = dynamic_cast<PatchbayOutModule*>(portWidget->module);
+	// 	PatchbayInModule* inputPatchbay = NULL;
+	// 	if(mod && mod->sourceExists(mod->label[0])) {
+	// 		inputPatchbay = mod->sources[mod->label[0]];
+	// 	}
 
-		description = portInfo->getDescription();
+	// 	engine::Port* port = portWidget->getPort();
+	// 	engine::PortInfo* portInfo = portWidget->getPortInfo();
 
-		// Get voltage text based on the number of channels
-		int channels = port->getChannels();
-		for (int i = 0; i < channels; i++) {
-			float v = port->getVoltage(i);
-			// Add newline or comma
-			voltageText += "\n";
-			if (channels > 1)
-				voltageText += string::f("%d: ", i + 1);
-			voltageText += string::f("% .3fV", math::normalizeZero(v));
-		}
+	// 	description = portInfo->getDescription();
 
-		labelText = portInfo->getFullName();
+	// 	// Get voltage text based on the number of channels
+	// 	int channels = port->getChannels();
+	// 	for (int i = 0; i < channels; i++) {
+	// 		float v = port->getVoltage(i);
+	// 		// Add newline or comma
+	// 		voltageText += "\n";
+	// 		if (channels > 1)
+	// 			voltageText += string::f("%d: ", i + 1);
+	// 		voltageText += string::f("% .3fV", math::normalizeZero(v));
+	// 	}
 
-		// Find the relevant cables: the cable going out of this port and the
-		// cable of the corresponding port on the other end of the Patchbay. We
-		// iterate over all cables, but that's fine, getCompleteCablesOnPort
-		// would do that anyway.
-		for (widget::Widget* w : APP->scene->rack->getCableContainer()->children) {
-			CableWidget* cw = dynamic_cast<CableWidget*>(w);
+	// 	labelText = portInfo->getFullName();
 
-			if(!cw->isComplete())
-				continue;
+	// 	// Find the relevant cables: the cable going out of this port and the
+	// 	// cable of the corresponding port on the other end of the Patchbay. We
+	// 	// iterate over all cables, but that's fine, getCompleteCablesOnPort
+	// 	// would do that anyway.
+	// 	for (widget::Widget* w : APP->scene->rack->getCableContainer()->children) {
+	// 		CableWidget* cw = dynamic_cast<CableWidget*>(w);
 
-			if(cw->outputPort == portWidget) {
-				// we've found a cable that is outgoing from this port
-				// we know that the portWidget is always an output, so otherPw will be the cable input port.
-				PortWidget* otherPw = cw->inputPort;
-				if(!otherPw)
-					continue;
+	// 		if(!cw->isComplete())
+	// 			continue;
 
-				cableText += "\n";
-				// This widget is always instantiated on an output, so always say "To"
-				cableText += "To ";
-				cableText += otherPw->module->model->getFullName();
-				cableText += ": ";
-				cableText += otherPw->getPortInfo()->getName();
-				cableText += " ";
-				cableText += "input";
+	// 		if(cw->outputPort == portWidget) {
+	// 			// we've found a cable that is outgoing from this port
+	// 			// we know that the portWidget is always an output, so otherPw will be the cable input port.
+	// 			PortWidget* otherPw = cw->inputPort;
+	// 			if(!otherPw)
+	// 				continue;
 
-			} else if(inputPatchbay
-			   && cw->inputPort
-			   && cw->outputPort
-			   && cw->inputPort->module == inputPatchbay
-			   && cw->inputPort->portId == portWidget->portId
-			  ) {
-				// cable is incoming to the other end of the corresponding
-				// Patchbay input, snag the label from it
-				labelText += "\n";
-				labelText += "Patchbaying from ";
-				labelText += cw->outputPort->module->model->getFullName();
-				labelText += ": ";
-				labelText += cw->outputPort->getPortInfo()->getName();
-				labelText += " ";
-				labelText += "output";
+	// 			cableText += "\n";
+	// 			// This widget is always instantiated on an output, so always say "To"
+	// 			cableText += "To ";
+	// 			cableText += otherPw->module->model->getFullName();
+	// 			cableText += ": ";
+	// 			cableText += otherPw->getPortInfo()->getName();
+	// 			cableText += " ";
+	// 			cableText += "input";
 
-			} else {
-				continue;
-			}
+	// 		} else if(inputPatchbay
+	// 		   && cw->inputPort
+	// 		   && cw->outputPort
+	// 		   && cw->inputPort->module == inputPatchbay
+	// 		   && cw->inputPort->portId == portWidget->portId
+	// 		  ) {
+	// 			// cable is incoming to the other end of the corresponding
+	// 			// Patchbay input, snag the label from it
+	// 			labelText += "\n";
+	// 			labelText += "Patchbaying from ";
+	// 			labelText += cw->outputPort->module->model->getFullName();
+	// 			labelText += ": ";
+	// 			labelText += cw->outputPort->getPortInfo()->getName();
+	// 			labelText += " ";
+	// 			labelText += "output";
 
-		}
+	// 		} else {
+	// 			continue;
+	// 		}
 
-		// Assemble the final tooltip text.
-		text = labelText;
+	// 	}
 
-		if(description != "") {
-			text += "\n";
-			text += description;
-		}
+	// 	// Assemble the final tooltip text.
+	// 	text = labelText;
 
-		if(voltageText != "") {
-			// voltageText already starts with newline
-			text += voltageText;
-		}
+	// 	if(description != "") {
+	// 		text += "\n";
+	// 		text += description;
+	// 	}
 
-		if(cableText != "") {
-			// cableText already starts with newline
-			text += cableText;
-		}
+	// 	if(voltageText != "") {
+	// 		// voltageText already starts with newline
+	// 		text += voltageText;
+	// 	}
 
-	}
+	// 	if(cableText != "") {
+	// 		// cableText already starts with newline
+	// 		text += cableText;
+	// 	}
+
+	// }
+
 	Tooltip::step();
 	// Position at bottom-right of parameter
 	box.pos = portWidget->getAbsoluteOffset(portWidget->box.size).round();
@@ -542,8 +584,8 @@ struct PatchbayModuleWidget : ModuleWidget {
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
 
 	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn.svg") {
-		addLabelDisplay(new EditablePatchbayLabelTextbox(module));
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+			addLabelDisplay(new EditablePatchbayLabelTextbox(module,  i));
 			addInput(createInputCentered<PJ301MPort>(Vec(22.5, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
 		}
 	}
@@ -555,11 +597,12 @@ struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 	PatchbaySourceSelectorTextBox *labelDisplay;
 
 	PatchbayOutModuleWidget(PatchbayOutModule *module) : PatchbayModuleWidget(module, "res/PatchbayOut.svg") {
-		labelDisplay = new PatchbaySourceSelectorTextBox();
-		labelDisplay->module = module;
-		addLabelDisplay(labelDisplay);
-
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+			labelDisplay = new PatchbaySourceSelectorTextBox();
+			labelDisplay->module = module;
+			labelDisplay->idx = i;
+			addLabelDisplay(labelDisplay);
+
 			float y = getPortYCoord(i);
 			addOutput(createOutputCentered<PatchbayOutPortWidget>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1 + i));
 			addChild(createTinyLightForPort<GreenRedLight>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1_LIGHTG + 2*i));
