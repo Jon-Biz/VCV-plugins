@@ -1,0 +1,28 @@
+{
+  "slug": "Jon",
+  "name": "Jon Biz",
+  "version": "2.0.0",
+  "license": "EUPL-1.2",
+  "brand": "",
+  "author": "Jonathan El-Bizri",
+  "modules": [
+    {
+      "slug": "PatchbayIn",
+      "name": "Patchbay In",
+      "description": "Send signals wirelessly to one or more Patchbay Out modules",
+      "tags": [
+        "utility",
+        "polyphonic"
+      ]
+    },
+    {
+      "slug": "PatchbayOut",
+      "name": "Patchbay Out",
+      "description": "Receive signals wirelessly from a Patchbay In module",
+      "tags": [
+        "utility",
+        "polyphonic"
+      ]
+    }
+  ]
+}
