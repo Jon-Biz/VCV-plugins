@@ -245,7 +245,7 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 	GUITimer errorDisplayTimer;
 	float errorDuration = 3.f;
 
-	EditablePatchbayLabelTextbox(PatchbayInModule *m, int idx=0): EditableTextBox() {
+	EditablePatchbayLabelTextbox(PatchbayInModule *m, int idx): EditableTextBox() {
 		assert(errorText.size() <= maxTextLength);
 		this->idx = idx;
 		module = m;
@@ -354,7 +354,7 @@ struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 	void step() override {
 		HoverableTextBox::step();
 		if(!module) return;
-		setText(module->label[0]);
+		setText(module->label[idx]);
 		textColor = module->sourceIsValid[idx] ? defaultTextColor : errorTextColor;
 	}
 
@@ -556,11 +556,11 @@ struct PatchbayModuleWidget : ModuleWidget {
 	HoverableTextBox *labelDisplay;
 	Patchbay *module;
 
-	virtual void addLabelDisplay(HoverableTextBox *disp) {
-		disp->font_size = 14;
+	virtual void addLabelDisplay(HoverableTextBox *disp, int idx) {
+		disp->font_size = 10;
 		disp->box.size = Vec(30, 14);
 		disp->textOffset.x = disp->box.size.x * 0.5f;
-		disp->box.pos = Vec(7.5f, RACK_GRID_WIDTH + 7.0f);
+		disp->box.pos = Vec(7.5f, (RACK_GRID_WIDTH + 21.0f) * (idx + 1));
 		labelDisplay = disp;
 		addChild(labelDisplay);
 	}
@@ -585,7 +585,7 @@ struct PatchbayInModuleWidget : PatchbayModuleWidget {
 
 	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
-			addLabelDisplay(new EditablePatchbayLabelTextbox(module,  i));
+			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
 			addInput(createInputCentered<PJ301MPort>(Vec(22.5, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
 		}
 	}
@@ -601,7 +601,7 @@ struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 			labelDisplay = new PatchbaySourceSelectorTextBox();
 			labelDisplay->module = module;
 			labelDisplay->idx = i;
-			addLabelDisplay(labelDisplay);
+			addLabelDisplay(labelDisplay, i);
 
 			float y = getPortYCoord(i);
 			addOutput(createOutputCentered<PatchbayOutPortWidget>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1 + i));
