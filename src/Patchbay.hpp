@@ -2,12 +2,12 @@
 #include <vector>
 #include <map>
 
-#define NUM_PATCHBAY_INPUTS 2
+#define NUM_PATCHBAY_INPUTS 8
 
 struct PatchbayInModule;
 
 struct Patchbay : Module {
-	std::string label[4];
+	std::string label[NUM_PATCHBAY_INPUTS];
 	Patchbay(int numParams, int numInputs, int numOutputs, int numLights = 0) {
 		config(numParams, numInputs, numOutputs, numLights);
 	}

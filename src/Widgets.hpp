@@ -69,11 +69,11 @@ struct HoverableTextBox : TextBox {
 struct EditableTextBox : HoverableTextBox, TextField {
 
 	bool isFocused = false;
-	const static unsigned int defaultMaxTextLength = 4;
-	unsigned int maxTextLength;
+	const static unsigned int defaultTextLength = 4;
+	const static unsigned int maxTextLength = 16;
 
 	EditableTextBox(): HoverableTextBox(), TextField() {
-		maxTextLength = defaultMaxTextLength;
+		// maxTextLength = 16;
 	}
 
 	void draw(const DrawArgs &args) override;
