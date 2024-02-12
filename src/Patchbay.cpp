@@ -218,7 +218,7 @@ struct PatchbayOutModule : Patchbay {
 
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			// Create a character array to hold the concatenated string
-			char buffer[6]; // Adjust the size as needed
+			char buffer[16]; // Adjust the size as needed
 
 			// Use snprintf to format the combination
 			snprintf(buffer, sizeof(buffer), "label%d", i);
@@ -234,7 +234,7 @@ struct PatchbayOutModule : Patchbay {
 	void dataFromJson(json_t* root) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			// Create a character array to hold the concatenated string
-			char buffer[6]; // Adjust the size as needed
+			char buffer[16]; // Adjust the size as needed
 
 			// Use snprintf to format the combination
 			snprintf(buffer, sizeof(buffer), "label%d", i);
