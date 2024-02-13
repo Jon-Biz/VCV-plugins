@@ -36,16 +36,7 @@ struct PatchbayInModule : Patchbay {
 		} while(sourceExists(l)); // if the label exists, regenerate
 		return l;
 	}
- 
- 	// Generate random, unique label for this Patchbay endpoint. Don't modify the sources map.
-	std::string getOtherLabel() {
-		std::string l;
-		do {
-			l = randomString(EditableTextBox::maxTextLength);
-		} while(sourceExists(l)); // if the label exists, regenerate
-		return l;
-	}
- 
+
 	int getInputIdx(std::string lbl) {
 		for (int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			if (lbl.compare(label[i]) == 0) {
@@ -62,10 +53,12 @@ struct PatchbayInModule : Patchbay {
 		if(lbl.empty() || sourceExists(lbl)) {
 			return false;
 		}
+
 		std::string oldLabel = label[idx];
 		sources.erase(oldLabel); //TODO: mutex for this and erase() calls below?
 		label[idx] = lbl;
 		addSource(this);
+
 		return true;
 	}
 
@@ -179,6 +172,7 @@ struct PatchbayOutModule : Patchbay {
 
 	PatchbayOutModule() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
 		assert(NUM_OUTPUTS == NUM_PATCHBAY_INPUTS);
+
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			configOutput(i, string::f("Port %d", i + 1));
 			label[i] = "";
@@ -257,11 +251,6 @@ void Patchbay::addSource(PatchbayInModule *t) {
 		sources[key] = t; //TODO: mutex?
 	}
 }
-
-
-////////////////////////////////////
-// some Patchbay-specific widgets //
-////////////////////////////////////
 
 struct PatchbayLabelDisplay {
 	NVGcolor errorTextColor = nvgRGB(0xd8, 0x0, 0x0);
@@ -350,13 +339,12 @@ struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 				item->rightText = CHECKMARK("true");
 				menu->addChild(item);
 			}
-
 		}
 
 		auto src = module->sources;
 
 		for(auto it = src.begin(); it != src.end(); it++) {
-			int idx = it->second->getInputIdx(it->first);
+			// int idx = it->second->getInputIdx(it->first);
 
 			PatchbayLabelMenuItem *item = new PatchbayLabelMenuItem();
 			
@@ -611,7 +599,6 @@ struct PatchbayModuleWidget : ModuleWidget {
 
 
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
-
 	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
@@ -637,7 +624,6 @@ struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 			addChild(createTinyLightForPort<GreenRedLight>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1_LIGHTG + 2*i));
 		}
 	}
-
 };
 
 
