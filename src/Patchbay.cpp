@@ -574,16 +574,21 @@ struct PatchbayModuleWidget : ModuleWidget {
 	Patchbay *module;
 
 	virtual void addLabelDisplay(HoverableTextBox *disp, int idx) {
-		disp->font_size = 13;
-		disp->box.size = Vec(70,16);
+		disp->font_size = 12;
+		disp->box.size = Vec(50,12);
 		disp->textOffset.x = disp->box.size.x * 0.5f;
-		disp->box.pos = Vec(7.5f, (RACK_GRID_WIDTH + 21.0f) * (idx + 1));
+		disp->box.pos = Vec(5.0f, getLabelYCoord(idx));
 		labelDisplay = disp;
 		addChild(labelDisplay);
 	}
 
 	float getPortYCoord(int i) {
-		return 57.f + 37.f * i;
+		return 54.0f + (RACK_GRID_WIDTH + 27.0f) * (i);
+	}
+
+	float getLabelYCoord(int i) {
+	
+		return 30.0f + ((RACK_GRID_WIDTH + 27.0f) * (i));
 	}
 
 	PatchbayModuleWidget(Patchbay *module, std::string panelFilename) {
@@ -591,18 +596,20 @@ struct PatchbayModuleWidget : ModuleWidget {
 		this->module = module;
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, panelFilename)));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		// addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH * 0.5f, 0)));
+		// addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH * 0.5f, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		// addChild(createWidget<ScrewSilver>(Vec(45.0f - (RACK_GRID_WIDTH * 0.5f), 0)));
+		// addChild(createWidget<ScrewSilver>(Vec(45.0f - (RACK_GRID_WIDTH * 0.5f), RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 	}
 };
 
 
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
-	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn.svg") {
+	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn2.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
-			addInput(createInputCentered<PJ301MPort>(Vec(22.5, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
+			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
 		}
 	}
 
@@ -612,16 +619,15 @@ struct PatchbayInModuleWidget : PatchbayModuleWidget {
 struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 	PatchbaySourceSelectorTextBox *labelDisplay;
 
-	PatchbayOutModuleWidget(PatchbayOutModule *module) : PatchbayModuleWidget(module, "res/PatchbayOut.svg") {
+	PatchbayOutModuleWidget(PatchbayOutModule *module) : PatchbayModuleWidget(module, "res/PatchbayOut2.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			labelDisplay = new PatchbaySourceSelectorTextBox();
 			labelDisplay->module = module;
 			labelDisplay->idx = i;
 			addLabelDisplay(labelDisplay, i);
 
-			float y = getPortYCoord(i);
-			addOutput(createOutputCentered<PatchbayOutPortWidget>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1 + i));
-			addChild(createTinyLightForPort<GreenRedLight>(Vec(22.5, y), module, PatchbayOutModule::OUTPUT_1_LIGHTG + 2*i));
+			addOutput(createOutputCentered<PatchbayOutPortWidget>(Vec(30, getPortYCoord(i)), module, PatchbayOutModule::OUTPUT_1 + i));
+			addChild(createTinyLightForPort<GreenRedLight>(Vec(44, 11.0f + getLabelYCoord(i)), module, PatchbayOutModule::OUTPUT_1_LIGHTG + 2*i));
 		}
 	}
 };

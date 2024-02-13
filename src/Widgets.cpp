@@ -49,7 +49,7 @@ void EditableTextBox::draw(const DrawArgs &args) {
 		// font face, size, alignment etc should be the same as for TextBox after the above draw call
 
 		// hacky way of measuring character width
-		NVGglyphPosition glyphs[4];
+		NVGglyphPosition glyphs[16];
 		nvgTextGlyphPositions(vg, 0.f, 0.f, "a", NULL, glyphs, 4);
 		float char_width = -2*glyphs[0].x;
 
