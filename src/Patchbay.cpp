@@ -606,7 +606,7 @@ struct PatchbayModuleWidget : ModuleWidget {
 
 
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
-	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PatchbayIn2.svg") {
+	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
 			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
@@ -619,7 +619,7 @@ struct PatchbayInModuleWidget : PatchbayModuleWidget {
 struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 	PatchbaySourceSelectorTextBox *labelDisplay;
 
-	PatchbayOutModuleWidget(PatchbayOutModule *module) : PatchbayModuleWidget(module, "res/PatchbayOut2.svg") {
+	PatchbayOutModuleWidget(PatchbayOutModule *module) : PatchbayModuleWidget(module, "res/PB-I.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			labelDisplay = new PatchbaySourceSelectorTextBox();
 			labelDisplay->module = module;
