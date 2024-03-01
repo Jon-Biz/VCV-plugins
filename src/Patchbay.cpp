@@ -1,6 +1,7 @@
 #include "Patchbay.hpp"
 #include "Widgets.hpp"
 #include "Util.hpp"
+#include <iostream>
 
 /////////////
 // modules //
@@ -65,9 +66,13 @@ struct PatchbayInModule : Patchbay {
 	PatchbayInModule() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
 		assert(NUM_INPUTS == NUM_PATCHBAY_INPUTS);
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
+			DEBUG("herein %i", i);
 			configInput(i, string::f("Port %d", i + 1));
+			DEBUG("herein2");
 			label[i] = getLabel();
 		}
+		DEBUG("herein3");
+		
 		addSource(this);
 	}
 
@@ -97,7 +102,9 @@ struct PatchbayInModule : Patchbay {
 	}
 
 	void dataFromJson(json_t* root) override {
+		DEBUG("dataFromJson");
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			DEBUG("dataFromJson %i", i);
 			// Create a character array to hold the concatenated string
 			char buffer[16]; // Adjust the size as needed
 
@@ -106,6 +113,8 @@ struct PatchbayInModule : Patchbay {
 
 			// The buffer now contains the concatenated C-style string
 			const char* key = buffer;
+			DEBUG("dataFromJson %s", key);
+
 			json_t *label_json = json_object_get(root, key);
 			if(json_is_string(label_json)) {
 				// remove previous label randomly generated in constructor
@@ -181,14 +190,15 @@ struct PatchbayOutModule : Patchbay {
 	}
 
 	void process(const ProcessArgs &args) override {
+
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			std::string key = label[i];
 
 			if(sourceExists(key)){
 				PatchbayInModule *src = sources[label[i]];
+
 				int idx = src->getInputIdx(label[i]);
 				Input input = src->inputs[idx];
-				
 				const int channels = input.getChannels();
 				outputs[OUTPUT_1 + i].setChannels(channels);
 				for(int c = 0; c < channels; c++) {
