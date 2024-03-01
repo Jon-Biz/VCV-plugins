@@ -123,7 +123,11 @@ struct PatchbayOutModule : Patchbay {
 
 	void dataFromJson(json_t* root) override {
 		// Delay the execution until all modules are instantiated
-		// postInitialization(root);
+		// Start a timer to call postInitialization after a delay
+		std::thread([this, root]() {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Adjust the delay as needed
+			postInitialization(root);
+		}).detach();
 	}
 };
 
