@@ -103,7 +103,7 @@ struct PatchbayOutModule : Patchbay {
 		return data;
 	}
 
-	void dataFromJson(json_t* root) override {
+	void postInitialization(json_t* root) {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			// Create a character array to hold the concatenated string
 			char buffer[16]; // Adjust the size as needed
@@ -119,7 +119,11 @@ struct PatchbayOutModule : Patchbay {
 				label[i] = json_string_value(label_json);
 			}
 		}
+	}
 
+	void dataFromJson(json_t* root) override {
+		// Delay the execution until all modules are instantiated
+		// postInitialization(root);
 	}
 };
 
