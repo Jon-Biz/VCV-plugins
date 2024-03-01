@@ -5,5 +5,7 @@
 /plugin.so
 .DS_Store
 
+.aider*
+
 **.swp
 **.swo
