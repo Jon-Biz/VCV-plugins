@@ -1,7 +1,8 @@
-#include "Patchbay.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
+
+#include "PatchbayOut.hpp"
 
 /////////////
 // modules //
@@ -65,9 +66,9 @@ struct PatchbayOutModule : Patchbay {
 			std::string key = label[i];
 
 			if(sourceExists(key)){
-				PatchbayInModule *src = sources[label[i]];
+				Patchbay *src = sources[label[i]];
 
-				int idx = src->getInputIdx(label[i]);
+				int idx = src->getIOIdx(label[i]);
 				Input input = src->inputs[idx];
 				const int channels = input.getChannels();
 				outputs[OUTPUT_1 + i].setChannels(channels);
@@ -117,29 +118,47 @@ struct PatchbayOutModule : Patchbay {
 			const char* key = buffer;
 
 			json_t *label_json = json_object_get(root, key);
+
 			if(json_is_string(label_json)) {
 				label[i] = json_string_value(label_json);
+			}
+			else {
+				DEBUG("PatchbayOutModule::postInitialization - invalid label_json");
 			}
 		}
 	}
 
 	void dataFromJson(json_t* root) override {
-		// Delay the execution until all modules are instantiated
-		// Start a timer to call postInitialization after a delay
-		std::thread([this, root]() {
-			std::this_thread::sleep_for(std::chrono::milliseconds(200)); // Adjust the delay as needed
-			postInitialization(root);
-		}).detach();
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// Create a character array to hold the concatenated string
+			char buffer[16]; // Adjust the size as needed
+
+			// Use snprintf to format the combination
+			snprintf(buffer, sizeof(buffer), "label%d", i);
+
+			// The buffer now contains the concatenated C-style string
+			const char* key = buffer;
+
+			json_t *label_json = json_object_get(root, key);
+
+			if(json_is_string(label_json)) {
+				label[i] = json_string_value(label_json);
+			}
+		}
+
+		addDestination(this);
+	}
+
+	void addDestination(Patchbay *t) {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			if(label[i].empty()) {
+				continue;
+			}
+			std::string key = t->label[i];
+			destinations[key] = t;
+		}
 	}
 };
-
-void Patchbay::addSource(PatchbayInModule *t) {
-	for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-		std::string key = t->label[i];
-		sources[key] = t; //TODO: mutex?
-	}
-}
-
 
 struct PatchbayLabelMenuItem : MenuItem {
 	PatchbayOutModule *module;
