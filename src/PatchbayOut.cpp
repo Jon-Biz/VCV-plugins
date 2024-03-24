@@ -127,7 +127,7 @@ struct PatchbayOutModule : Patchbay {
 		// Delay the execution until all modules are instantiated
 		// Start a timer to call postInitialization after a delay
 		std::thread([this, root]() {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Adjust the delay as needed
+			std::this_thread::sleep_for(std::chrono::milliseconds(200)); // Adjust the delay as needed
 			postInitialization(root);
 		}).detach();
 	}
