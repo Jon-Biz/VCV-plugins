@@ -54,21 +54,17 @@ struct PatchbayInModule : Patchbay {
 
 	PatchbayInModule() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
 		assert(NUM_INPUTS == NUM_PATCHBAY_INPUTS);
+
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
-			DEBUG("herein %i", i);
 			configInput(i, string::f("Port %d", i + 1));
-			DEBUG("herein2");
 			label[i] = getLabel();
 		}
-		DEBUG("herein3");
 		
 		addSource(this);
 	}
 
 	~PatchbayInModule() {
-		for(int i=0; i < NUM_PATCHBAY_INPUTS; i++) {
-			sources.erase(label[i]);
-		}
+		eraseInputs();
 	}
 
 	void addSource(Patchbay *t) {
@@ -130,6 +126,10 @@ struct PatchbayInModule : Patchbay {
 	}
 
 	void onRemove (const RemoveEvent & e) override {
+		eraseInputs();
+	}
+
+	void eraseInputs() {
 		for(int i=0; i < NUM_PATCHBAY_INPUTS; i++) {
 			sources.erase(label[i]);
 		}
@@ -176,8 +176,6 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 	}
 
 };
-
-
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
 	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
