@@ -8,7 +8,6 @@
 // modules //
 /////////////
 
-
 struct PatchbayOutModule : Patchbay {
 
 	bool sourceIsValid[NUM_PATCHBAY_INPUTS];
@@ -70,8 +69,11 @@ struct PatchbayOutModule : Patchbay {
 
 				int idx = src->getIOIdx(label[i]);
 				Input input = src->inputs[idx];
+
 				const int channels = input.getChannels();
+
 				outputs[OUTPUT_1 + i].setChannels(channels);
+
 				for(int c = 0; c < channels; c++) {
 					outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
 				}
@@ -104,28 +106,7 @@ struct PatchbayOutModule : Patchbay {
 		}
 
 		return data;
-	}
 
-	void postInitialization(json_t* root) {
-		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-			// Create a character array to hold the concatenated string
-			char buffer[16]; // Adjust the size as needed
-
-			// Use snprintf to format the combination
-			snprintf(buffer, sizeof(buffer), "label%d", i);
-
-			// The buffer now contains the concatenated C-style string
-			const char* key = buffer;
-
-			json_t *label_json = json_object_get(root, key);
-
-			if(json_is_string(label_json)) {
-				label[i] = json_string_value(label_json);
-			}
-			else {
-				DEBUG("PatchbayOutModule::postInitialization - invalid label_json");
-			}
-		}
 	}
 
 	void dataFromJson(json_t* root) override {
@@ -237,7 +218,6 @@ struct PatchbaySourceSelectorTextBox : HoverableTextBox, PatchbayLabelDisplay {
 		setText(module->label[idx]);
 		textColor = module->sourceIsValid[idx] ? defaultTextColor : errorTextColor;
 	}
-
 };
 
 // Custom PortWidget for Patchbay outputs, with custom tooltip behavior
