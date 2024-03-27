@@ -60,7 +60,6 @@ struct PatchbayOutModule : Patchbay {
 	}
 
 	void process(const ProcessArgs &args) override {
-
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			std::string key = label[i];
 

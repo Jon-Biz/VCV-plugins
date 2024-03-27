@@ -18,6 +18,14 @@ struct Patchbay : Module {
 	static std::map<std::string, Patchbay*> destinations;
 
 	inline bool sourceExists(std::string lbl) {
+		// const std::string &lblRef = lbl;
+		// DEBUG("Checking if source exists: %s\n", lblRef.c_str());
+
+		// for(auto const& x : sources) {
+		// 	const std::string &key = x.first;
+		// 	DEBUG("Source: %s\n", key.c_str());
+		// }
+
 		return sources.find(lbl) != sources.end();
 	}
 
