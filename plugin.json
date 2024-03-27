@@ -2,7 +2,7 @@
   "slug": "JonBiz",
   "name": "Jon Biz",
   "version": "2.1.0",
-  "license": "EUPL-1.2",
+  "license": "GPL-3.0-or-later",
   "brand": "Jon Biz",
   "author": "Jonathan El-Bizri",
   "modules": [
