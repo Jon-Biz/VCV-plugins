@@ -28,15 +28,6 @@ struct PatchbayInModule : Patchbay {
 		NUM_LIGHTS
 	};
 
-	// Generate random, unique label for this Patchbay endpoint. Don't modify the sources map.
-	std::string getLabel() {
-		std::string l;
-		do {
-			l = randomString(EditableTextBox::defaultTextLength);
-		} while(sourceExists(l)); // if the label exists, regenerate
-		return l;
-	}
-
 	// Change the label of this input, if the label doesn't exist already.
 	// Return whether the label was updated.
 	bool updateLabel(std::string lbl, int idx = 0) {
