@@ -55,6 +55,7 @@ struct PatchbayInModule : Patchbay {
 	}
 
 	~PatchbayInModule() {
+		detachDestinations();
 		eraseInputs();
 	}
 
@@ -62,6 +63,40 @@ struct PatchbayInModule : Patchbay {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			std::string key = t->label[i];
 			sources[key] = t;
+		}
+	}
+
+	void attachDestinations() {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			std::string key = label[i];
+
+			for (auto const& x : destinations) {
+				Patchbay *const outputBay = x.second;
+
+				for (int j = 0; j < NUM_PATCHBAY_INPUTS; j++) {
+					if (key == outputBay->label[j]) {
+						rack::engine::Input input = inputs[i];
+
+						outputBay->setInput(j, input);
+					}
+				}
+			}
+		}
+	}
+
+	void detachDestinations() {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			std::string key = label[i];
+
+			for (auto const& x : destinations) {
+				Patchbay *const outputBay = x.second;
+
+				for (int j = 0; j < NUM_PATCHBAY_INPUTS; j++) {
+					if (key == outputBay->label[j]) {
+						outputBay->removeInput(j);
+					}
+				}
+			}
 		}
 	}
 

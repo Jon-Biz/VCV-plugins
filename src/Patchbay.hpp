@@ -48,6 +48,13 @@ struct Patchbay : Module {
 
 		return 0;
 	}
+
+	void setInput(int idx, rack::engine::Input t) {
+	}
+
+	void removeInput(int idx) {
+	}
+
 };
 
 struct PatchbayLabelDisplay {

@@ -11,10 +11,15 @@
 struct PatchbayOutModule : Patchbay {
 
 	bool sourceIsValid[NUM_PATCHBAY_INPUTS];
+	
+	rack::engine::Input inputs[NUM_PATCHBAY_INPUTS];
+
+	std::string moduleId;
 
 	enum ParamIds {
 		NUM_PARAMS
 	};
+
 	enum InputIds {
 		NUM_INPUTS
 	};
@@ -59,29 +64,40 @@ struct PatchbayOutModule : Patchbay {
 		}
 	}
 
+	rack::engine::Input getPort(std::string key) {
+		Patchbay *src = sources[key];
+		int idx = src->getIOIdx(key);
+
+		return src->inputs[idx];
+	}
+
+	int setChannels(rack::engine::Input &input, rack::engine::Output &output) { 
+		const int channels = input.getChannels();
+		output.setChannels(channels);
+
+		return channels;
+	}
+
 	void process(const ProcessArgs &args) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			std::string key = label[i];
 
 			if(sourceExists(key)){
-				Patchbay *src = sources[label[i]];
 
-				int idx = src->getIOIdx(label[i]);
-				Input input = src->inputs[idx];
-
-				const int channels = input.getChannels();
-
-				outputs[OUTPUT_1 + i].setChannels(channels);
+				Input input = getPort(key);
+				int channels = setChannels(input, outputs[OUTPUT_1 + i]);
 
 				for(int c = 0; c < channels; c++) {
 					outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
 				}
+
 				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
 				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
 				sourceIsValid[i] = true;
 			} else {
-				outputs[i].setChannels(1);
 				outputs[OUTPUT_1 + i].setVoltage(0.f);
+				outputs[OUTPUT_1 + i].setChannels(0);
+				
 				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness(0.f);
 				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(0.f);
 				sourceIsValid[i] = false;
@@ -134,9 +150,24 @@ struct PatchbayOutModule : Patchbay {
 			if(label[i].empty()) {
 				continue;
 			}
-			std::string key = t->label[i];
-			destinations[key] = t;
+			// each PatchbayOutModule is a destination with it's own unique key
+			std::string key = getLabel();
+			moduleId = key;
+			destinations[key] = t; 
 		}
+	}
+
+	void setInput(int idx, rack::engine::Input input) {
+		inputs[idx] = input;
+		sourceIsValid[idx] = true;
+
+		setChannels(inputs[idx], outputs[OUTPUT_1 + idx]);
+	}
+
+	void removeInput(int idx) {
+		sourceIsValid[idx] = false;
+
+		outputs[OUTPUT_1 + idx].setChannels(0);
 	}
 };
 
@@ -426,4 +457,5 @@ struct PatchbayOutModuleWidget : PatchbayModuleWidget {
 		}
 	}
 };
+
 Model *modelPatchbayOutModule = createModel<PatchbayOutModule, PatchbayOutModuleWidget>("PatchbayOut");
