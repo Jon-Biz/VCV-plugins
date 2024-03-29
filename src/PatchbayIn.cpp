@@ -51,6 +51,7 @@ struct PatchbayInModule : Patchbay {
 			label[i] = getLabel();
 		}
 		
+		attachDestinations();
 		addSource(this);
 	}
 
@@ -149,6 +150,7 @@ struct PatchbayInModule : Patchbay {
 		}
 
 		addSource(this);
+		attachDestinations();
 	}
 
 	void onRemove (const RemoveEvent & e) override {
