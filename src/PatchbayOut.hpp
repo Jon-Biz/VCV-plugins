@@ -526,5 +526,3 @@ struct PatchbayOutWidget : PatchbayModuleWidget {
 	}
 };
 
-// Model *modelPatchbayOutModule = createModel<PatchbayOut, PatchbayOutWidget>("PatchbayOut");
-
