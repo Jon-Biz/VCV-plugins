@@ -61,6 +61,8 @@ struct PatchbayOutModule : Patchbay {
 			configOutput(i, string::f("Port %d", i + 1));
 			label[i] = "";
 			sourceIsValid[i] = false;
+			attachInputs();
+			addDestination();
 		}
 	}
 
@@ -73,35 +75,54 @@ struct PatchbayOutModule : Patchbay {
 
 	int setChannels(rack::engine::Input &input, rack::engine::Output &output) { 
 		const int channels = input.getChannels();
-		output.setChannels(channels);
+		const int outChannels = output.getChannels();
+
+		if (channels != outChannels) {
+			// if the number of channels is different, set the number of channels
+			// of the output to the number of channels of the input
+			output.setChannels(channels);
+		}
 
 		return channels;
 	}
 
 	void process(const ProcessArgs &args) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-			std::string key = label[i];
-
-			if(sourceExists(key)){
-
-				Input input = getPort(key);
-				int channels = setChannels(input, outputs[OUTPUT_1 + i]);
-
-				for(int c = 0; c < channels; c++) {
-					outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
+			if (sourceIsValid[i]) {
+				Input input = inputs[i];
+				int channels = input.getChannels();
+				for(int c = 0; c < 1; c++) {
+					int voltage = input.getVoltage(c);
+					DEBUG("PatchbayOutModule voltage: %d", voltage);
+					outputs[i].setVoltage(voltage, c);
 				}
-
+				
 				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
 				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
-				sourceIsValid[i] = true;
-			} else {
-				outputs[OUTPUT_1 + i].setVoltage(0.f);
-				outputs[OUTPUT_1 + i].setChannels(0);
+			}
+
+			// std::string key = label[i];
+
+			// if(sourceExists(key)){
+
+			// 	Input input = getPort(key);
+			// 	int channels = setChannels(input, outputs[OUTPUT_1 + i]);
+
+			// 	for(int c = 0; c < channels; c++) {
+			// 		outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
+			// 	}
+
+			// 	// lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
+			// 	// lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
+			// 	sourceIsValid[i] = true;
+			// } else {
+			// 	outputs[OUTPUT_1 + i].setVoltage(0.f);
+			// 	outputs[OUTPUT_1 + i].setChannels(0);
 				
-				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness(0.f);
-				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(0.f);
-				sourceIsValid[i] = false;
-			}			
+			// 	// lights[OUTPUT_1_LIGHTG + 2*i].setBrightness(0.f);
+			// 	// lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(0.f);
+			// 	sourceIsValid[i] = false;
+			// }			
 		}
 	};
 
@@ -142,18 +163,18 @@ struct PatchbayOutModule : Patchbay {
 			}
 		}
 
-		addDestination(this);
+		attachInputs();
+		addDestination();
 	}
 
-	void addDestination(Patchbay *t) {
+	void attachInputs() {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-			if(label[i].empty()) {
-				continue;
+			std::string key = label[i];
+
+			if(sourceExists(key)){
+				Input input = getPort(key);
+				setInput(i, input);
 			}
-			// each PatchbayOutModule is a destination with it's own unique key
-			std::string key = getLabel();
-			moduleId = key;
-			destinations[key] = t; 
 		}
 	}
 
@@ -161,13 +182,24 @@ struct PatchbayOutModule : Patchbay {
 		inputs[idx] = input;
 		sourceIsValid[idx] = true;
 
-		setChannels(inputs[idx], outputs[OUTPUT_1 + idx]);
+		setChannels(inputs[idx], outputs[idx]);
+	}
+
+	void addDestination() {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			// each PatchbayOutModule is a destination with it's own unique key
+			std::string key = getLabel();
+			moduleId = key;
+			destinations[key] = this; 
+		}
 	}
 
 	void removeInput(int idx) {
 		sourceIsValid[idx] = false;
 
 		outputs[OUTPUT_1 + idx].setChannels(0);
+		lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(0.f);
+		lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(0.f);
 	}
 };
 
@@ -177,6 +209,7 @@ struct PatchbayLabelMenuItem : MenuItem {
 	int idx;
 	void onAction(const event::Action &e) override {
 		module->label[idx] = label;
+		module->attachInputs();
 	}
 };
 
