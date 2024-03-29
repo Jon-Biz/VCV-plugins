@@ -6,6 +6,6 @@
 .DS_Store
 
 .aider*
-
+.vscode*
 **.swp
 **.swo
