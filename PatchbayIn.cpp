@@ -6,7 +6,7 @@
 
 #define NUM_PATCHBAY_INPUTS 8
 
-struct PatchbayInModule : Patchbay {
+struct PatchbayIn : Patchbay {
 	enum ParamIds {
 		NUM_PARAMS
 	};
@@ -28,15 +28,6 @@ struct PatchbayInModule : Patchbay {
 		NUM_LIGHTS
 	};
 
-	// Generate random, unique label for this Patchbay endpoint. Don't modify the sources map.
-	std::string getLabel() {
-		std::string l;
-		do {
-			l = randomString(EditableTextBox::defaultTextLength);
-		} while(sourceExists(l)); // if the label exists, regenerate
-		return l;
-	}
-
 	// Change the label of this input, if the label doesn't exist already.
 	// Return whether the label was updated.
 	bool updateLabel(std::string lbl, int idx = 0) {
@@ -52,7 +43,7 @@ struct PatchbayInModule : Patchbay {
 		return true;
 	}
 
-	PatchbayInModule() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+	PatchbayIn() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
 		assert(NUM_INPUTS == NUM_PATCHBAY_INPUTS);
 
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
@@ -60,10 +51,12 @@ struct PatchbayInModule : Patchbay {
 			label[i] = getLabel();
 		}
 		
+		attachDestinations();
 		addSource(this);
 	}
 
-	~PatchbayInModule() {
+	~PatchbayIn() {
+		detachDestinations();
 		eraseInputs();
 	}
 
@@ -71,6 +64,40 @@ struct PatchbayInModule : Patchbay {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			std::string key = t->label[i];
 			sources[key] = t;
+		}
+	}
+
+	void attachDestinations() {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			std::string key = label[i];
+
+			for (auto const& x : destinations) {
+				Patchbay *const outputBay = x.second;
+
+				for (int j = 0; j < NUM_PATCHBAY_INPUTS; j++) {
+					if (key == outputBay->label[j]) {
+						rack::engine::Input input = inputs[i];
+
+						outputBay->setInput(j, input);
+					}
+				}
+			}
+		}
+	}
+
+	void detachDestinations() {
+		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
+			std::string key = label[i];
+
+			for (auto const& x : destinations) {
+				Patchbay *const outputBay = x.second;
+
+				for (int j = 0; j < NUM_PATCHBAY_INPUTS; j++) {
+					if (key == outputBay->label[j]) {
+						outputBay->removeInput(j);
+					}
+				}
+			}
 		}
 	}
 
@@ -123,6 +150,7 @@ struct PatchbayInModule : Patchbay {
 		}
 
 		addSource(this);
+		attachDestinations();
 	}
 
 	void onRemove (const RemoveEvent & e) override {
@@ -137,13 +165,13 @@ struct PatchbayInModule : Patchbay {
 };
 
 struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
-	PatchbayInModule *module;
+	PatchbayIn *module;
 	int idx;
 	std::string errorText = "!err";
 	GUITimer errorDisplayTimer;
 	float errorDuration = 3.f;
 
-	EditablePatchbayLabelTextbox(PatchbayInModule *m, int idx): EditableTextBox() {
+	EditablePatchbayLabelTextbox(PatchbayIn *m, int idx): EditableTextBox() {
 		assert(errorText.size() <= maxTextLength);
 		this->idx = idx;
 		module = m;
@@ -177,13 +205,13 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 
 };
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
-	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
+	PatchbayInModuleWidget(PatchbayIn *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
-			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
+			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayIn::INPUT_1 + i));
 		}
 	}
 
 };
 
-Model *modelPatchbayInModule = createModel<PatchbayInModule, PatchbayInModuleWidget>("PatchbayIn");
+Model *modelPatchbayInModule = createModel<PatchbayIn, PatchbayInModuleWidget>("PatchbayIn");

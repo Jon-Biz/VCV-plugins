@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <map>
 
@@ -17,16 +19,26 @@ struct Patchbay : Module {
 	static std::map<std::string, Patchbay*> sources;
 	static std::map<std::string, Patchbay*> destinations;
 
+	// Generate random, unique label for this Patchbay endpoint. Don't modify the sources map.
+	std::string getLabel() {
+		std::string l;
+		do {
+			l = randomString(EditableTextBox::defaultTextLength);
+		} while(sourceExists(l) || destinationExists(l)); // if the label exists, regenerate
+		return l;
+	}
+
 	inline bool sourceExists(std::string lbl) {
-		// const std::string &lblRef = lbl;
-		// DEBUG("Checking if source exists: %s\n", lblRef.c_str());
+		return (
+			sources.find(lbl) != sources.end()
+		);
+	}
 
-		// for(auto const& x : sources) {
-		// 	const std::string &key = x.first;
-		// 	DEBUG("Source: %s\n", key.c_str());
-		// }
 
-		return sources.find(lbl) != sources.end();
+	inline bool destinationExists(std::string lbl) {
+		return (
+			destinations.find(lbl) != destinations.end()
+		);
 	}
 
 	int getIOIdx(std::string lbl) {
@@ -37,6 +49,12 @@ struct Patchbay : Module {
 		}
 
 		return 0;
+	}
+
+	void setInput(int idx, Patchbay* pbIn, int input_Idx) {
+	}
+
+	void removeInput(int idx) {
 	}
 };
 
