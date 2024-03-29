@@ -20,8 +20,8 @@ struct PatchbayOut : Patchbay {
 
 	std::string moduleId;
 
-	bool isGreen = false;
-	bool isRed = false;
+	bool isGreen[NUM_PATCHBAY_INPUTS] = {false};
+	bool isRed[NUM_PATCHBAY_INPUTS] = {false};
 	
 	enum ParamIds {
 		NUM_PARAMS
@@ -93,19 +93,36 @@ struct PatchbayOut : Patchbay {
 		return channels;
 	}
 
+	void clearLights(int idx) {
+		isGreen[idx] = false;
+		isRed[idx] = false;
+
+		lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(0.f);
+		lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(0.f);
+	}
+
 	void setLights(rack::engine::Input &input, int idx) {
 		bool isConnected = input.isConnected();
-
-		if (isConnected && !isGreen) {
-			lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness( true );
-			lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(false);
-			isGreen = true;
-			isRed = false;
-		} else if (!isConnected && isGreen){
-			lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(false);
-			lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(true);
-			isGreen = false;
-			isRed = true;
+		
+		// the light has three states, so we have to handle isGreen & isRed separately.
+		if (isConnected) {
+			if(!isGreen[idx]) {
+				lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness( true );
+				isGreen[idx] = true;
+			}
+			if(isRed[idx]) {
+				lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(false);
+				isRed[idx] = false;
+			}
+		} else {
+			if(isGreen[idx]) {
+				lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness( false );
+				isGreen[idx] = false;
+			}
+			if(!isRed[idx]) {
+				lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(true);
+				isRed[idx] = true;
+			}
 		}
 	}
 
@@ -190,6 +207,8 @@ struct PatchbayOut : Patchbay {
 
 		rack::engine::Input in = pbIn->inputs[input_Idx];
 		setChannels(in, outputs[idx]);
+
+		clearLights(idx);
 	}
 
 	void addDestination() {
@@ -206,11 +225,7 @@ struct PatchbayOut : Patchbay {
 
 		outputs[OUTPUT_1 + idx].setChannels(0);
 
-		isGreen = false;
-		isRed = false;
-
-		lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(0.f);
-		lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(0.f);
+		clearLights(idx);
 	}
 };
 
