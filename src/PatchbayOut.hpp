@@ -20,6 +20,9 @@ struct PatchbayOut : Patchbay {
 
 	std::string moduleId;
 
+	bool isGreen = false;
+	bool isRed = false;
+	
 	enum ParamIds {
 		NUM_PARAMS
 	};
@@ -90,6 +93,22 @@ struct PatchbayOut : Patchbay {
 		return channels;
 	}
 
+	void setLights(rack::engine::Input &input, int idx) {
+		bool isConnected = input.isConnected();
+
+		if (isConnected && !isGreen) {
+			lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness( true );
+			lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(false);
+			isGreen = true;
+			isRed = false;
+		} else if (!isConnected && isGreen){
+			lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(false);
+			lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(true);
+			isGreen = false;
+			isRed = true;
+		}
+	}
+
 	void process(const ProcessArgs &args) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
 			if (sourceIsValid[i]) {
@@ -106,32 +125,8 @@ struct PatchbayOut : Patchbay {
 					outputs[i].setVoltage(voltage, c);
 				}
 				
-				lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
-				lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
+				setLights(input, i);
 			}
-
-			// std::string key = label[i];
-
-			// if(sourceExists(key)){
-
-			// 	Input input = getPort(key);
-			// 	int channels = setChannels(input, outputs[OUTPUT_1 + i]);
-
-			// 	for(int c = 0; c < channels; c++) {
-			// 		outputs[OUTPUT_1 + i].setVoltage(input.getVoltage(c), c);
-			// 	}
-
-			// 	// lights[OUTPUT_1_LIGHTG + 2*i].setBrightness( input.isConnected());
-			// 	// lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(!input.isConnected());	
-			// 	sourceIsValid[i] = true;
-			// } else {
-			// 	outputs[OUTPUT_1 + i].setVoltage(0.f);
-			// 	outputs[OUTPUT_1 + i].setChannels(0);
-				
-			// 	// lights[OUTPUT_1_LIGHTG + 2*i].setBrightness(0.f);
-			// 	// lights[OUTPUT_1_LIGHTR + 2*i].setBrightness(0.f);
-			// 	sourceIsValid[i] = false;
-			// }			
 		}
 	};
 
@@ -210,6 +205,10 @@ struct PatchbayOut : Patchbay {
 		sourceIsValid[idx] = false;
 
 		outputs[OUTPUT_1 + idx].setChannels(0);
+
+		isGreen = false;
+		isRed = false;
+
 		lights[OUTPUT_1_LIGHTG + 2*idx].setBrightness(0.f);
 		lights[OUTPUT_1_LIGHTR + 2*idx].setBrightness(0.f);
 	}
