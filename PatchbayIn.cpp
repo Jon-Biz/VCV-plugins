@@ -6,7 +6,7 @@
 
 #define NUM_PATCHBAY_INPUTS 8
 
-struct PatchbayInModule : Patchbay {
+struct PatchbayIn : Patchbay {
 	enum ParamIds {
 		NUM_PARAMS
 	};
@@ -43,7 +43,7 @@ struct PatchbayInModule : Patchbay {
 		return true;
 	}
 
-	PatchbayInModule() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+	PatchbayIn() : Patchbay(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
 		assert(NUM_INPUTS == NUM_PATCHBAY_INPUTS);
 
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
@@ -55,7 +55,7 @@ struct PatchbayInModule : Patchbay {
 		addSource(this);
 	}
 
-	~PatchbayInModule() {
+	~PatchbayIn() {
 		detachDestinations();
 		eraseInputs();
 	}
@@ -165,13 +165,13 @@ struct PatchbayInModule : Patchbay {
 };
 
 struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
-	PatchbayInModule *module;
+	PatchbayIn *module;
 	int idx;
 	std::string errorText = "!err";
 	GUITimer errorDisplayTimer;
 	float errorDuration = 3.f;
 
-	EditablePatchbayLabelTextbox(PatchbayInModule *m, int idx): EditableTextBox() {
+	EditablePatchbayLabelTextbox(PatchbayIn *m, int idx): EditableTextBox() {
 		assert(errorText.size() <= maxTextLength);
 		this->idx = idx;
 		module = m;
@@ -205,13 +205,13 @@ struct EditablePatchbayLabelTextbox : EditableTextBox, PatchbayLabelDisplay {
 
 };
 struct PatchbayInModuleWidget : PatchbayModuleWidget {
-	PatchbayInModuleWidget(PatchbayInModule *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
+	PatchbayInModuleWidget(PatchbayIn *module) : PatchbayModuleWidget(module, "res/PB-O.svg") {
 		for(int i = 0; i < NUM_PATCHBAY_INPUTS; i++) {
 			addLabelDisplay(new EditablePatchbayLabelTextbox(module, i), i);
-			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayInModule::INPUT_1 + i));
+			addInput(createInputCentered<PJ301MPort>(Vec(30, getPortYCoord(i)), module, PatchbayIn::INPUT_1 + i));
 		}
 	}
 
 };
 
-Model *modelPatchbayInModule = createModel<PatchbayInModule, PatchbayInModuleWidget>("PatchbayIn");
+Model *modelPatchbayInModule = createModel<PatchbayIn, PatchbayInModuleWidget>("PatchbayIn");

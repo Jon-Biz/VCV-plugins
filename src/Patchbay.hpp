@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <map>
 
@@ -49,12 +51,11 @@ struct Patchbay : Module {
 		return 0;
 	}
 
-	void setInput(int idx, rack::engine::Input t) {
+	void setInput(int idx, Patchbay* pbIn, int input_Idx) {
 	}
 
 	void removeInput(int idx) {
 	}
-
 };
 
 struct PatchbayLabelDisplay {
