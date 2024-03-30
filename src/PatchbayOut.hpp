@@ -23,6 +23,8 @@ struct PatchbayOut : Patchbay {
 	bool isGreen[NUM_PATCHBAY_INPUTS] = {false};
 	bool isRed[NUM_PATCHBAY_INPUTS] = {false};
 	
+	int procCounter = 0;
+
 	enum ParamIds {
 		NUM_PARAMS
 	};
@@ -128,14 +130,14 @@ struct PatchbayOut : Patchbay {
 
 	void process(const ProcessArgs &args) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-			if (sourceIsValid[i]) {
+			if (sourceIsValid[i]  && outputs[i].isConnected()) {
 				std::string key = label[i];
 				PatchbayIn* pb = inputs[i];
 				int inputIndex = inputIdx[i];
 
 				rack::engine::Input input = pb->inputs[inputIndex];
 
-				int channels = input.getChannels();
+				int channels = setChannels(input, outputs[i]);
 
 				for(int c = 0; c < channels; c++) {
 					int voltage = input.getVoltage(c);
@@ -525,6 +527,4 @@ struct PatchbayOutWidget : PatchbayModuleWidget {
 		}
 	}
 };
-
-// Model *modelPatchbayOutModule = createModel<PatchbayOut, PatchbayOutWidget>("PatchbayOut");
 
