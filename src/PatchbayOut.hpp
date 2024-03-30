@@ -23,6 +23,8 @@ struct PatchbayOut : Patchbay {
 	bool isGreen[NUM_PATCHBAY_INPUTS] = {false};
 	bool isRed[NUM_PATCHBAY_INPUTS] = {false};
 	
+	int procCounter = 0;
+
 	enum ParamIds {
 		NUM_PARAMS
 	};
@@ -128,7 +130,7 @@ struct PatchbayOut : Patchbay {
 
 	void process(const ProcessArgs &args) override {
 		for(int i=0; i  < NUM_PATCHBAY_INPUTS; i++) {
-			if (sourceIsValid[i]) {
+			if (sourceIsValid[i]  && outputs[i].isConnected()) {
 				std::string key = label[i];
 				PatchbayIn* pb = inputs[i];
 				int inputIndex = inputIdx[i];
