@@ -135,7 +135,7 @@ struct PatchbayOut : Patchbay {
 
 				rack::engine::Input input = pb->inputs[inputIndex];
 
-				int channels = input.getChannels();
+				int channels = setChannels(input, outputs[i]);
 
 				for(int c = 0; c < channels; c++) {
 					int voltage = input.getVoltage(c);
